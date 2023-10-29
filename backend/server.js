@@ -30,13 +30,44 @@ async function runCompletion(prompt) {
 
 const multer = require("multer");
 const path = require("path");
+const { PDFExtract } = require("pdf.js-extract");
 const upload = multer({ dest: path.join(__dirname, "pdfsummary") });
+// const { encode } = require("gpt-3-encoder");
 
 app.post("/api/pdfsummary", upload.single("pdf"), async (req, res) => {
   try {
     // res.json({ file: req.file, body: req.body });
     const { maxWords } = req.body;
     const pdfFile = req.file;
+
+    //extract text from the pdf file
+    const pdfExtract = new PDFExtract();
+
+    const extractOptions = {
+      firstPage: 1,
+      lastPage: undefined,
+      password: "",
+      verbosity: -1,
+      normalizeWhitespace: false,
+      disableCombinedTextItems: false,
+    };
+
+    const data = await pdfExtract.extract(pdfFile.path, extractOptions);
+
+    const pdfText = data.pages
+      .map((page) => page.content.map((item) => item.str).join(" "))
+      .join(" ");
+
+    //if there is no text extracted return an error
+    if (pdfText.length === 0) {
+      res.json({
+        error:
+          "Text could not be extracted from this PDF. Please try another PDF.",
+      });
+      return;
+    }
+
+    res.json({ pdfText });
   } catch (error) {
     console.error("An error occured: ", error);
     res.status(500).json({ error });

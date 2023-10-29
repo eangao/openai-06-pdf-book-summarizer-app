@@ -39,6 +39,12 @@ function PDFSummary() {
         },
       });
       console.log(response.data);
+
+      if (response.data.error) {
+        setError(response.data.error);
+        return;
+      }
+      setError("");
       setJresult(JSON.stringify(response.data, null, 2));
 
       // if (response.ok) {
@@ -55,6 +61,8 @@ function PDFSummary() {
       console.log(error);
       setResult("");
       setError("An error occurred while submitting the form.");
+    } finally {
+      setLoading(false);
     }
   };
 

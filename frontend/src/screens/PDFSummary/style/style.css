@@ -3,12 +3,12 @@
 }
 
 .custom-button {
-  height: 60px !important;
+  height: 60px;
 }
 
 .container .hero {
   background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-    url("../../../images/a-book.jpeg");
+    url("../../../images/library.jpeg");
   height: 50vh;
   background-position: center;
   color: white;
