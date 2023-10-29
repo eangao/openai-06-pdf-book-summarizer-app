@@ -28,30 +28,18 @@ async function runCompletion(prompt) {
   return response;
 }
 
-//post request to /api/chatgpt
-app.post("/api/chatgpt", async (req, res) => {
+const multer = require("multer");
+const path = require("path");
+const upload = multer({ dest: path.join(__dirname, "pdfsummary") });
+
+app.post("/api/pdfsummary", upload.single("pdf"), async (req, res) => {
   try {
-    //extract the text from the request body
-    const { text } = req.body;
-
-    // Pass the request text to the runCompletion function
-    const completion = await runCompletion(text);
-
-    // Return the completion as a JSON response
-    res.json({ data: completion.data });
+    // res.json({ file: req.file, body: req.body });
+    const { maxWords } = req.body;
+    const pdfFile = req.file;
   } catch (error) {
-    //handle the error in the catch statement
-    if (error.response) {
-      console.error(error.response.status, error.response.data);
-      res.status(error.response.status).json(error.response.data);
-    } else {
-      console.error("Error with OPENAI API request:", error.message);
-      res.status(500).json({
-        error: {
-          message: "An error occured during your request.",
-        },
-      });
-    }
+    console.error("An error occured: ", error);
+    res.status(500).json({ error });
   }
 });
 

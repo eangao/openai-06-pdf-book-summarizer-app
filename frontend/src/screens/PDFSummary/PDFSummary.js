@@ -1,49 +1,56 @@
 import React, { useState } from "react";
 import "./style/style.css";
+import axios from "axios";
 
 function PDFSummary() {
   const [inputValue, setInputValue] = useState("");
   const [result, setResult] = useState("");
-  const [prompt, setPrompt] = useState("");
   const [jresult, setJresult] = useState("");
   const [error, setError] = useState("");
   const [maxWords, setMaxWords] = useState("100");
   const [selectedFile, setSelectedFile] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleFileChange = () => {};
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    setSelectedFile(file);
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    if (!inputValue) {
-      setError("Please enter a prompt!");
-      setPrompt("");
+    setLoading(true);
+
+    if (!maxWords) {
+      setError("Please enter a number of words for the summary");
       setResult("");
       setJresult("");
       return;
     }
 
-    const response = await fetch("/api/chatgpt", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ text: inputValue }),
-    });
-
     try {
-      if (response.ok) {
-        const data = await response.json();
-        console.log(data);
-        setPrompt(inputValue);
-        setResult(data.data.choices[0].text);
-        setJresult(JSON.stringify(data.data, null, 2));
-        setInputValue("");
-        setError("");
-      } else {
-        throw new Error("An error occurred");
-      }
+      const formData = new FormData();
+      formData.append("pdf", selectedFile);
+      formData.append("maxWords", maxWords);
+
+      const response = await axios.post("/api/pdfsummary", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      console.log(response.data);
+      setJresult(JSON.stringify(response.data, null, 2));
+
+      // if (response.ok) {
+      //   const data = await response.json();
+      //   console.log(data);
+      //   setResult(data.data.choices[0].text);
+      //   setJresult(JSON.stringify(data.data, null, 2));
+      //   setInputValue("");
+      //   setError("");
+      // } else {
+      //   throw new Error("An error occurred");
+      // }
     } catch (error) {
       console.log(error);
       setResult("");
@@ -57,7 +64,7 @@ function PDFSummary() {
         <h1 className="display-4">PDF Book Summary</h1>
         <p className="lead">Summarize PDF Book for Effecient Reading!</p>
 
-        <form className="w-100">
+        <form className="w-100" onSubmit={handleSubmit}>
           <input type="file" accept=".pdf" onChange={handleFileChange}></input>
 
           <div className="form-group row">
@@ -85,7 +92,7 @@ function PDFSummary() {
 
       {error && <div className="alert alert-danger mt-3">{error}</div>}
       {result && <div className="alert alert-success mt-3">{result}</div>}
-      {result && (
+      {jresult && (
         <pre className="alert alert-info mt-3">
           <code>{jresult}</code>
         </pre>
