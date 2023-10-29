@@ -7,6 +7,11 @@ function PDFSummary() {
   const [prompt, setPrompt] = useState("");
   const [jresult, setJresult] = useState("");
   const [error, setError] = useState("");
+  const [maxWords, setMaxWords] = useState("100");
+  const [selectedFile, setSelectedFile] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleFileChange = () => {};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,30 +53,37 @@ function PDFSummary() {
 
   return (
     <div className="container">
-      <form className="form-horizontal" onSubmit={handleSubmit}>
-        <div className="form-group row">
-          <div className="col-sm-10 mt-2">
-            <div className="form-floating">
-              <textarea
-                className="form-control custom-input"
-                id="floatingInput"
-                placeholder="Enter a value"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-              />
+      <div className="hero d-flex align-items-center justify-content-center text-center flex-column p-3">
+        <h1 className="display-4">PDF Book Summary</h1>
+        <p className="lead">Summarize PDF Book for Effecient Reading!</p>
 
-              <label htmlFor="floatingInput">Input</label>
+        <form className="w-100">
+          <input type="file" accept=".pdf" onChange={handleFileChange}></input>
+
+          <div className="form-group row">
+            <div className="col-sm-4 offset-sm-4 mt-3">
+              <input
+                type="number"
+                min="10"
+                value={maxWords}
+                onChange={(e) => setMaxWords(e.target.value)}
+                className="form-control"
+              ></input>
             </div>
-          </div>
-          <div className="col-sm-2 mt-2">
-            <button type="submit" className="btn btn-primary custom-button">
-              Submit
+            <button
+              type="submit"
+              disabled={!selectedFile || loading}
+              className="btn btn-primary custom-button mt-1"
+            >
+              {loading
+                ? "Analyzing PDF..."
+                : `Summarize PDF in about ${maxWords} words`}
             </button>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
+
       {error && <div className="alert alert-danger mt-3">{error}</div>}
-      {prompt && <div className="alert alert-secondary mt-3">{prompt}</div>}
       {result && <div className="alert alert-success mt-3">{result}</div>}
       {result && (
         <pre className="alert alert-info mt-3">
