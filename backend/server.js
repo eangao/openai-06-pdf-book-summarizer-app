@@ -18,12 +18,16 @@ const configuration = new Configuration({
 //build openai instance using OpenAIApi
 const openai = new OpenAIApi(configuration);
 
-//build the runCompletion which sends a request to the OPENAI Completion API
+//runCompletion
 async function runCompletion(prompt) {
   const response = await openai.createCompletion({
     model: "text-davinci-003",
     prompt: prompt,
+    temperature: 1,
     max_tokens: 50,
+    top_p: 1,
+    frequency_penalty: 0,
+    presence_penalty: 0,
   });
   return response;
 }
@@ -113,6 +117,57 @@ const splitTextIntoChunks = (text, maxChunkSize) => {
   //return the chunks array
 };
 
+const summariseChunk = async function summariseChunk(chunk, maxWords) {
+  // Creating a condition string based on the maxWords value
+  let condition = "";
+  if (maxWords) {
+    condition = `in about ${maxWords} words`;
+  }
+  try {
+    // Making a request to the OpenAI API to summarise the chunk
+    const response = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo-16k",
+      messages: [
+        {
+          role: "user",
+          content: `Please summarise the following text ${condition}:\n"""${chunk}"""\n\nSummary:`,
+        },
+      ],
+      temperature: 1,
+      max_tokens: 4000,
+      top_p: 1,
+      frequency_penalty: 0,
+      presence_penalty: 0,
+    });
+
+    //return the summary
+    return response.data.choices[0].message.content;
+  } catch (error) {
+    console.log("summariseChunk error", error);
+    throw new Error(error);
+  }
+};
+
+const summariseChunks = async (chunks) => {
+  // Creating a delay function using setTimeout and Promises
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // Summarizing each chunk by making API requests with delays in between using Promise.all
+  const summarisedChunks = await Promise.all(
+    chunks.map(async (chunk) => {
+      const result = await summariseChunk(chunk);
+      await delay(200);
+      return result;
+    })
+  );
+
+  // Concatenating the summarization results into a single string
+  const concatenatedText = summarisedChunks.join(" ");
+
+  // Returning the concatenated summarization text
+  return concatenatedText;
+};
+
 app.post("/api/pdfsummary", upload.single("pdf"), async (req, res) => {
   try {
     // res.json({ file: req.file, body: req.body });
@@ -146,9 +201,21 @@ app.post("/api/pdfsummary", upload.single("pdf"), async (req, res) => {
       return;
     }
 
-    const chunks = splitTextIntoChunks(pdfText, 2000);
-    const tokens = chunks.map((chunk) => encode(chunk).length);
-    res.json({ chunks, tokens });
+    // const chunks = splitTextIntoChunks(pdfText, 2000);
+    // const tokens = chunks.map((chunk) => encode(chunk).length);
+    // res.json({ chunks, tokens });
+
+    let summarisedText = pdfText;
+
+    const maxToken = 2000;
+    while (calculateTokens(summarisedText) > maxToken) {
+      const newChunks = splitTextIntoChunks(summarisedText, maxToken);
+      summarisedText = await summariseChunks(newChunks);
+    }
+
+    summarisedText = await summariseChunk(summarisedText, maxWords);
+
+    res.json({ summarisedText });
   } catch (error) {
     console.error("An error occured: ", error);
     res.status(500).json({ error });

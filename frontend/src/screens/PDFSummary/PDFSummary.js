@@ -45,6 +45,7 @@ function PDFSummary() {
         return;
       }
       setError("");
+      setResult(response.data.summarisedText);
       setJresult(JSON.stringify(response.data, null, 2));
 
       // if (response.ok) {
